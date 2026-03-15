@@ -2,7 +2,7 @@
 
 > Telegram-бот с интеграцией Google Gemini. Задаёте вопрос — получаете ответ. История диалогов, системные промпты, лимиты сообщений, админ-панель. Single-message UI для меню и настроек.
 
-## 🔗 [Бот: @RWdev_AIBot](https://t.me/RWdev_AIBot)
+## 🔗 [Бот: @RWdev_AIassisBot](https://t.me/RWdev_AIassisBot)
 
 ## Возможности
 
