@@ -1,0 +1,11 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - shop-bot_default
+
+networks:
+  shop-bot_default:
+    external: true
