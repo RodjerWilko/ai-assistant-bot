@@ -1,4 +1,4 @@
-# bot/main.py — точка входа, конфиг, Gemini, БД, роутеры
+# bot/main.py — точка входа, конфиг, AI (OpenRouter), БД, роутеры
 from __future__ import annotations
 
 import asyncio
@@ -17,7 +17,7 @@ from bot.config import Config
 from bot.handlers import admin, user
 from bot.middlewares.db import DbSessionMiddleware
 from bot.models.database import create_session_pool, create_tables
-from bot.services.gemini import GeminiService
+from bot.services.ai import AIService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,11 +27,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class GeminiMiddleware:
-    """Добавляет gemini_service в data для хендлеров."""
+class AIMiddleware:
+    """Добавляет ai_service в data для хендлеров."""
 
-    def __init__(self, gemini_service: GeminiService) -> None:
-        self.gemini_service = gemini_service
+    def __init__(self, ai_service: AIService) -> None:
+        self.ai_service = ai_service
 
     async def __call__(
         self,
@@ -39,7 +39,7 @@ class GeminiMiddleware:
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        data["gemini_service"] = self.gemini_service
+        data["ai_service"] = self.ai_service
         return await handler(event, data)
 
 
@@ -48,14 +48,18 @@ async def main() -> None:
     if not config.BOT_TOKEN:
         logger.error("BOT_TOKEN не задан")
         return
-    if not config.GEMINI_API_KEY:
-        logger.error("GEMINI_API_KEY не задан")
+    if not config.OPENAI_API_KEY:
+        logger.error("OPENAI_API_KEY не задан")
         return
 
     session_pool = create_session_pool(config.DATABASE_URL)
     await create_tables(database_url=config.DATABASE_URL)
 
-    gemini_service = GeminiService(config.GEMINI_API_KEY, config.GEMINI_MODEL)
+    ai_service = AIService(
+        config.OPENAI_API_KEY,
+        config.OPENAI_BASE_URL,
+        config.AI_MODEL,
+    )
 
     bot = Bot(
         token=config.BOT_TOKEN,
@@ -64,8 +68,8 @@ async def main() -> None:
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(DbSessionMiddleware(session_pool))
     dp.callback_query.middleware(DbSessionMiddleware(session_pool))
-    dp.message.middleware(GeminiMiddleware(gemini_service))
-    dp.callback_query.middleware(GeminiMiddleware(gemini_service))
+    dp.message.middleware(AIMiddleware(ai_service))
+    dp.callback_query.middleware(AIMiddleware(ai_service))
 
     dp.include_router(admin.router)
     dp.include_router(user.router)

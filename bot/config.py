@@ -16,8 +16,9 @@ class Config:
     BOT_TOKEN: str
     ADMIN_IDS: list[int]
     DATABASE_URL: str
-    GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    OPENAI_API_KEY: str
+    OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
+    AI_MODEL: str = "meta-llama/llama-4-scout"
     DEFAULT_SYSTEM_PROMPT: str = (
         "Ты — полезный AI-ассистент. Отвечай кратко и по делу на русском языке."
     )
@@ -33,8 +34,9 @@ class Config:
             "DATABASE_URL",
             "sqlite+aiosqlite:///./aibot.db",
         )
-        gemini_key = os.getenv("GEMINI_API_KEY", "")
-        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        openai_key = os.getenv("OPENAI_API_KEY", "")
+        openai_base = os.getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+        ai_model = os.getenv("AI_MODEL", "meta-llama/llama-4-scout")
         default_prompt = os.getenv(
             "DEFAULT_SYSTEM_PROMPT",
             "Ты — полезный AI-ассистент. Отвечай кратко и по делу на русском языке.",
@@ -45,8 +47,9 @@ class Config:
             BOT_TOKEN=token,
             ADMIN_IDS=admin_ids,
             DATABASE_URL=db_url,
-            GEMINI_API_KEY=gemini_key,
-            GEMINI_MODEL=gemini_model,
+            OPENAI_API_KEY=openai_key,
+            OPENAI_BASE_URL=openai_base,
+            AI_MODEL=ai_model,
             DEFAULT_SYSTEM_PROMPT=default_prompt,
             MAX_MESSAGES_PER_DAY=max_per_day,
             MAX_CONTEXT_MESSAGES=max_context,

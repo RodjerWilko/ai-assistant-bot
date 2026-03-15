@@ -62,7 +62,7 @@ async def cmd_start(message: Message, session, state: FSMContext) -> None:
         await create_conversation(session, message.from_user.id)
     text = (
         "🤖 <b>AI Ассистент</b>\n\n"
-        "Привет! Я — ваш AI-помощник на базе Google Gemini.\n\n"
+        "Привет! Я — ваш AI-помощник (OpenRouter: Llama, GPT, Claude и др.).\n\n"
         "Просто напишите мне вопрос, и я отвечу!\n\n"
         "💡 Подсказки:\n"
         "• Задайте любой вопрос\n"
@@ -81,9 +81,9 @@ async def handle_user_message(
     message: Message,
     session,
     state: FSMContext,
-    gemini_service,
+    ai_service,
 ) -> None:
-    """Обработка вопроса пользователя — вызов Gemini и ответ."""
+    """Обработка вопроса пользователя — вызов AI (OpenRouter) и ответ."""
     if not message.text or not message.from_user:
         return
     # Проверка лимита
@@ -105,7 +105,7 @@ async def handle_user_message(
         session, conv.id, _config.MAX_CONTEXT_MESSAGES
     )
     history = [
-        {"role": m.role, "parts": [m.content]}
+        {"role": m.role, "content": m.content}
         for m in history_raw
         if m.role in ("user", "assistant")
     ]
@@ -117,11 +117,11 @@ async def handle_user_message(
             user.system_prompt if user and user.system_prompt
             else _config.DEFAULT_SYSTEM_PROMPT
         )
-        response = await gemini_service.generate_response(
+        response = await ai_service.generate_response(
             message.text, history, system_prompt
         )
     except Exception as e:
-        logger.exception("Gemini error: %s", e)
+        logger.exception("AI error: %s", e)
         await delete_safe(message.bot, message.chat.id, typing_msg.message_id)
         await message.answer(
             "❌ Не удалось получить ответ. Попробуйте ещё раз."
