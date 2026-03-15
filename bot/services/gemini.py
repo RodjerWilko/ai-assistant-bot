@@ -7,7 +7,15 @@ from typing import Any
 
 import google.generativeai as genai
 
+try:
+    from google.api_core.exceptions import ResourceExhausted
+except ImportError:
+    ResourceExhausted = None  # type: ignore[misc, assignment]
+
 logger = logging.getLogger(__name__)
+QUOTA_EXCEEDED_MSG = (
+    "⚠️ Лимит запросов к AI исчерпан. Попробуйте через 1–2 минуты."
+)
 
 # Максимальная длина ответа в символах (ориентир для разбивки)
 MAX_RESPONSE_LEN = 4000
@@ -28,19 +36,23 @@ class GeminiService:
     ) -> str:
         """
         Синхронный вызов Gemini. history: [{"role": "user"|"model", "parts": ["текст"]}].
+        При 429 (квота) — пробуем fallback-модель gemini-1.5-flash, иначе возвращаем сообщение.
         """
-        try:
+        def _call(model_name: str) -> str:
             model = genai.GenerativeModel(
-                self.model_name,
+                model_name,
                 system_instruction=system_prompt or "Ты полезный ассистент.",
             )
-            # Конвертируем историю в формат google-generativeai
             gemini_history = []
             for h in history:
                 role = "user" if h["role"] == "user" else "model"
                 parts = h.get("parts", [h.get("content", "")])
                 if isinstance(parts, list) and parts:
-                    text = parts[0] if isinstance(parts[0], str) else parts[0].get("text", "")
+                    text = (
+                        parts[0]
+                        if isinstance(parts[0], str)
+                        else parts[0].get("text", "")
+                    )
                 else:
                     text = str(parts)
                 gemini_history.append({"role": role, "parts": [text]})
@@ -49,7 +61,18 @@ class GeminiService:
             if not response or not response.text:
                 return "Пустой ответ от модели."
             return response.text.strip()
+
+        try:
+            return _call(self.model_name)
         except Exception as e:
+            if ResourceExhausted and isinstance(e, ResourceExhausted):
+                logger.warning("Gemini quota exceeded (429), trying fallback model")
+                if self.model_name == "gemini-2.0-flash":
+                    try:
+                        return _call("gemini-1.5-flash")
+                    except Exception:
+                        pass
+                return QUOTA_EXCEEDED_MSG
             logger.exception("Gemini API error: %s", e)
             raise
 
